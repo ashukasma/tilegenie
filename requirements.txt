@@ -1,0 +1,7 @@
+# TileGenie Dependencies
+# Minimal requirements for Genie-powered Streamlit app
+
+streamlit>=1.32.0
+databricks-sdk>=0.20.0
+pandas>=2.0.0
+plotly>=5.18.0
