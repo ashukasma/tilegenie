@@ -1,10 +1,6 @@
-# TileGenie App Configuration - Matching working hello-world pattern
+# Minimal TileGenie App Configuration
 
-command: [
-  "streamlit",
-  "run",
-  "app.py"
-]
+command: ["streamlit", "run", "app.py", "--server.port=8501"]
 
 env:
   - name: GENIE_SPACE_ID
