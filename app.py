@@ -17,41 +17,149 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 st.set_page_config(
     page_title="TileGenie - Genie-Powered Intelligence",
-    page_icon="🟦",
+    page_icon="🧞",
     layout="wide"
 )
 
+# Palette follows Vastu colour guidance: ivory base (peace/purity), green primary
+# (growth, N/E), turmeric gold accent (prosperity, NE), terracotta only for alerts.
+# No pure black, no dominant red.
 st.markdown("""
 <style>
-    .main-header {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-        padding: 2rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-    }
-    .main-header h1 { color: white; margin-bottom: 0.5rem; }
-    .main-header p { color: #bfdbfe; font-size: 1.1rem; margin: 0; }
-    .metric-card {
-        background: white;
-        border: 2px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 1.5rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        height: 100%;
-    }
-    .metric-title {
-        color: #6b7280;
-        font-size: 0.875rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-    }
-    .metric-value {
-        color: #1f2937;
-        font-size: 1.1rem;
-        font-weight: 500;
-        margin-top: 0.5rem;
-        line-height: 1.5;
-    }
+:root {
+    --ivory:#FCFAF5; --sand:#F4EFE5; --clay:#E4D9C6;
+    --ink:#2E2B26; --muted:#7A7060;
+    --emerald:#1B7A5A; --emerald-dark:#145C44; --emerald-soft:#E7F1EC; --emerald-line:#CFE3D9;
+    --gold:#C9962C; --gold-soft:#F7EEDA;
+    --terracotta:#B5502E; --terracotta-dark:#8A3B1F;
+}
+
+#MainMenu, footer, [data-testid="stHeader"] { display: none; }
+.block-container { padding-top: 2.2rem; padding-bottom: 6rem; max-width: 1180px; }
+
+/* ---- header ---- */
+.tg-brand { display:flex; align-items:center; gap:.9rem; }
+.tg-mark { display:grid; grid-template-columns:repeat(2,15px); grid-template-rows:repeat(2,15px); gap:3px; }
+.tg-mark i { border-radius:3px; display:block; }
+.tg-mark i:nth-child(1){ background:var(--emerald); }
+.tg-mark i:nth-child(2){ background:var(--gold); }
+.tg-mark i:nth-child(3){ background:var(--clay); }
+.tg-mark i:nth-child(4){ background:var(--emerald-dark); }
+.tg-name { font-size:1.65rem; font-weight:700; letter-spacing:-.02em; color:var(--ink); line-height:1.15; }
+.tg-tag { font-size:.83rem; color:var(--muted); margin-top:.15rem; }
+.tg-rule { height:3px; border-radius:2px; margin:1rem 0 1.7rem;
+    background:linear-gradient(90deg,var(--emerald) 0%,var(--gold) 38%,var(--clay) 100%); }
+
+@media (max-width: 640px) {
+    .tg-name { font-size:1.4rem; }
+    .tg-rule { margin:.8rem 0 1.3rem; }
+}
+
+/* ---- section label ---- */
+.tg-sec { font-size:.71rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 .8rem; }
+.tg-sec span { color:var(--clay); font-weight:600; letter-spacing:.04em; text-transform:none; }
+
+/* ---- KPI cards ----
+   :has() matches every ancestor, so exclude any wrapper that holds a *nested*
+   marked wrapper. That leaves exactly the innermost one: the card itself. */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) {
+    background:#FFFFFF; border:1px solid var(--clay); border-top:3px solid var(--gold);
+    border-radius:12px; padding:1.2rem 1.3rem 1.1rem;
+    flex:1; display:flex; flex-direction:column;
+    box-shadow:0 1px 2px rgba(46,43,38,.05), 0 6px 18px rgba(46,43,38,.045);
+}
+/* Equal-height cards. Every rule below carries the same :not() guard as the card
+   itself -- an unguarded :has(.tg-card) also matches the outer page wrapper and
+   restacks the whole layout. */
+div[data-testid="column"]:has(.tg-card) { display:flex; flex-direction:column; }
+div[data-testid="column"]:has(.tg-card) > div[data-testid="stVerticalBlockBorderWrapper"] { flex:1; display:flex; flex-direction:column; }
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) > div,
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) > div > [data-testid="stVerticalBlock"] {
+    flex:1; display:flex; flex-direction:column;
+}
+/* the SQL button drops to the card floor, hard right */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) .element-container:has(.stButton),
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) [data-testid="element-container"]:has(.stButton),
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) .stButton { margin-top:auto; align-self:flex-end; }
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) .stButton { display:flex; justify-content:flex-end; width:100%; }
+
+/* SQL is a debug affordance: a small square icon, not a call to action */
+.tg-sqlbtn > button,
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) .stButton button,
+[data-testid="stChatMessage"] .stButton button {
+    width:30px; height:30px; min-height:0; padding:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    color:var(--muted); background:transparent;
+    border:1px solid var(--clay); border-radius:8px;
+}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) .stButton button:hover,
+[data-testid="stChatMessage"] .stButton button:hover {
+    color:var(--emerald-dark); border-color:var(--emerald); background:var(--emerald-soft);
+}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) .stButton button span[role="img"],
+[data-testid="stChatMessage"] .stButton button span[role="img"] { font-size:17px; line-height:1; }
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) .stButton button p,
+[data-testid="stChatMessage"] .stButton button p { margin:0; line-height:1; }
+
+/* ---- alerts ----
+   Both failure states (a KPI question that failed, a chat answer that failed)
+   mean the same thing, so they read the same: terracotta, the one warm alert
+   colour this palette allows. */
+[data-testid="stAlertContainer"] {
+    background:rgba(181,80,46,.08) !important;
+    color:var(--terracotta-dark) !important;
+    border:1px solid rgba(181,80,46,.22);
+    border-radius:10px;
+}
+[data-testid="stAlertContainer"] code { color:var(--terracotta-dark); background:rgba(181,80,46,.1); }
+
+/* ---- SQL dialog ---- */
+[data-testid="stDialog"] div[role="dialog"] { background:var(--ivory); border:1px solid var(--clay); border-radius:14px; }
+[data-testid="stDialog"] code { font-size:.85rem; }
+
+/* ---- chat empty state ---- */
+.tg-empty { text-align:center; color:var(--muted); font-size:.88rem; line-height:1.6;
+    border:1px dashed var(--clay); border-radius:12px; padding:2rem 1.5rem; background:rgba(255,255,255,.5); }
+.tg-empty b { color:var(--ink); font-weight:600; }
+
+.tg-card-label { font-size:.69rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:.15rem; }
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) p {
+    font-size:.97rem; line-height:1.6; color:var(--ink); margin-bottom:.4rem;
+}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.tg-card):not(:has(div[data-testid="stVerticalBlockBorderWrapper"] .tg-card)) strong {
+    color:var(--emerald-dark); font-weight:700;
+}
+
+/* ---- buttons ---- */
+.stButton button {
+    background:#FFFFFF; color:var(--emerald-dark); border:1px solid var(--clay);
+    border-radius:999px; font-weight:600; font-size:.84rem; padding:.45rem 1rem;
+    transition:border-color .15s ease, background .15s ease;
+}
+.stButton button:hover { border-color:var(--emerald); background:var(--emerald-soft); color:var(--emerald-dark); }
+.stButton button:focus:not(:active) { border-color:var(--emerald); color:var(--emerald-dark); }
+.stButton button[kind="primary"] { background:var(--emerald); color:#fff; border-color:var(--emerald); }
+.stButton button[kind="primary"]:hover { background:var(--emerald-dark); border-color:var(--emerald-dark); color:#fff; }
+
+
+/* ---- expander ---- */
+[data-testid="stExpander"] details { border:1px solid var(--clay); border-radius:9px; background:var(--ivory); }
+[data-testid="stExpander"] summary { font-size:.78rem; font-weight:600; color:var(--muted); }
+[data-testid="stExpander"] summary:hover { color:var(--emerald-dark); }
+
+/* ---- progress ---- */
+.stProgress > div > div > div > div { background:linear-gradient(90deg,var(--gold),var(--emerald)); }
+
+/* ---- chat ---- */
+/* the bottom bar sits outside .block-container, so cap it to match the content column */
+[data-testid="stBottomBlockContainer"] { max-width:1180px; margin:0 auto; padding-bottom:1.5rem; }
+[data-testid="stChatInput"] { border:1px solid var(--clay); border-radius:14px; background:#fff; }
+[data-testid="stChatMessage"] { background:transparent; padding:.6rem 0; }
+[data-testid="stChatMessageAvatarUser"] { background-color:var(--emerald) !important; color:#fff !important; }
+[data-testid="stChatMessageAvatarAssistant"] { background-color:var(--gold) !important; color:#fff !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,10 +214,17 @@ def ask_genie(w, space_id, question, conversation_id=None):
     except Exception as e:
         return {"success": False, "error": str(e), "question": question}
 
+@st.dialog("Generated SQL", width="large")
+def show_sql(question, sql):
+    """SQL is a developer concern, so it lives behind a modal rather than in the card."""
+    st.caption(question)
+    st.code(sql, language="sql")
+
+
 GENIE_SPACE_ID = os.getenv("GENIE_SPACE_ID", "").replace("genie://", "")
 
 if not GENIE_SPACE_ID:
-    st.error("❌ GENIE_SPACE_ID not configured")
+    st.error("GENIE_SPACE_ID is not configured.")
     st.stop()
 
 # Session state initialization
@@ -123,188 +238,163 @@ if "dashboard_data" not in st.session_state:
     st.session_state.dashboard_data = []
 
 # Header
-st.markdown('<div class="main-header"><h1>🟦 TileGenie</h1><p>🧞‍♂️ Powered by Databricks Genie - Auto-Loading Production Intelligence</p></div>', unsafe_allow_html=True)
-
-# Auto-load dashboard on first load (PARALLEL EXECUTION)
-if not st.session_state.dashboard_loaded:
-    st.markdown("### 📊 Executive Dashboard")
-    st.caption("🧞‍♂️ Genie is analyzing your production data in parallel... ⚡")
-    
-    w = get_workspace_client()
-    
-    # Define CEO questions to auto-load
-    ceo_questions = [
-        "What was yesterday's total production in units?",
-        "How many machines are currently down or in maintenance?",
-        "What is the current total inventory across all warehouses?"
-    ]
-    
-    progress_placeholder = st.empty()
-    status_placeholder = st.empty()
-    
-    # Execute all queries in parallel
-    with st.spinner("⚡ Running 3 queries in parallel..."):
-        start_time = time.time()
-        
-        # Use ThreadPoolExecutor for parallel execution
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            # Submit all tasks
-            futures = {executor.submit(ask_genie, w, GENIE_SPACE_ID, q, None): q for q in ceo_questions}
-            
-            completed = 0
-            results = []
-            
-            # Collect results as they complete
-            for future in as_completed(futures):
-                completed += 1
-                result = future.result()
-                results.append(result)
-                
-                progress_placeholder.progress(completed / len(ceo_questions))
-                status_placeholder.caption(f"✅ Completed {completed}/{len(ceo_questions)} queries")
-                
-                # Store conversation ID from first successful response
-                if result["success"] and st.session_state.conversation_id is None:
-                    st.session_state.conversation_id = result["conversation_id"]
-        
-        elapsed = time.time() - start_time
-        
-        # Store results in order
-        st.session_state.dashboard_data = sorted(results, key=lambda x: ceo_questions.index(x["question"]))
-        st.session_state.dashboard_loaded = True
-        
-        status_placeholder.success(f"✅ Dashboard loaded in {elapsed:.1f} seconds! (Parallel execution)")
-    
-    time.sleep(1)
-    st.rerun()
-
-# Display loaded dashboard
-if st.session_state.dashboard_loaded and st.session_state.dashboard_data:
-    st.markdown("### 📊 Executive Dashboard")
-    st.caption("🎯 Auto-loaded insights powered by Genie (parallel execution)")
-    
-    dashboard_cols = st.columns(3)
-    
-    for idx, data in enumerate(st.session_state.dashboard_data):
-        with dashboard_cols[idx]:
-            if data["success"]:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-title">{data["question"].replace('?', '')}</div>
-                    <div class="metric-value">{data["content"][:200]}...</div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                with st.expander("📄 Full Answer"):
-                    st.markdown(data["content"])
-                
-                if data.get("sql"):
-                    with st.expander("🔍 SQL Query"):
-                        st.code(data["sql"], language="sql")
-            else:
-                st.error(f"❌ {data['question']}")
-                st.caption(f"Error: {data.get('error', 'Unknown')}")
-    
-    st.markdown("---")
-
-# Quick Action Buttons
-st.markdown("### ⚡ Ask Genie More Questions")
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    if st.button("📊 Production Trends", use_container_width=True, type="primary"):
-        st.session_state['quick_question'] = "Show me production trends for the last 7 days"
-        st.rerun()
-
-with col2:
-    if st.button("📦 Low Stock Alert", use_container_width=True, type="primary"):
-        st.session_state['quick_question'] = "Which products have the lowest stock levels?"
-        st.rerun()
-
-with col3:
-    if st.button("🔮 Forecast", use_container_width=True, type="primary"):
-        st.session_state['quick_question'] = "What is the expected production for next quarter?"
-        st.rerun()
-
-with col4:
-    if st.button("⚙️ Machine Downtime", use_container_width=True, type="primary"):
-        st.session_state['quick_question'] = "Which machines had the most downtime this week?"
-        st.rerun()
-
-st.markdown("---")
-
-# Display conversation history
-for idx, msg in enumerate(st.session_state.messages):
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-        
-        if msg["role"] == "assistant" and "sql" in msg and msg["sql"]:
-            with st.expander("🔍 SQL Query", expanded=False):
-                st.code(msg["sql"], language="sql")
-
-# Chat input
-if 'quick_question' in st.session_state:
-    user_input = st.session_state['quick_question']
-    del st.session_state['quick_question']
-else:
-    user_input = st.chat_input("✨ Ask Genie anything about your tile production...")
-
-if user_input:
-    w = get_workspace_client()
-    
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-    
-    with st.chat_message("assistant"):
-        with st.spinner("🧞‍♂️ Genie is analyzing..."):
-            result = ask_genie(w, GENIE_SPACE_ID, user_input, st.session_state.conversation_id)
-            
-            if result["success"]:
-                if st.session_state.conversation_id is None:
-                    st.session_state.conversation_id = result["conversation_id"]
-                
-                st.markdown(result["content"])
-                
-                msg_data = {"role": "assistant", "content": result["content"]}
-                if result.get("sql"):
-                    msg_data["sql"] = result["sql"]
-                
-                st.session_state.messages.append(msg_data)
-                
-                if result.get("sql"):
-                    with st.expander("🔍 SQL Query", expanded=False):
-                        st.code(result["sql"], language="sql")
-            else:
-                st.error(f"❌ Error: {result.get('error')}")
-
-# Sidebar
-with st.sidebar:
-    st.markdown("### 🏆 Contest Entry")
-    st.write("**Databricks Community Contest**")
-    st.caption("Genie-Powered App Challenge")
-    
-    st.markdown("---")
-    
-    st.markdown("### 🧞‍♂️ Genie at the Core")
-    st.success(
-        "**⚡ Parallel Intelligence**\n\n"
-        "✅ 3 queries in ~30 seconds\n"
-        "✅ Auto-loading dashboard\n"
-        "✅ Natural language → SQL\n"
-        "✅ Real-time analysis\n\n"
-        "All powered by Genie analyzing 16 gold tables!"
-    )
-    
-    st.markdown("---")
-    
-    if st.button("🔄 Reload Dashboard", use_container_width=True):
+head_left, head_right = st.columns([5, 1], vertical_alignment="center")
+with head_left:
+    st.markdown("""
+    <div class="tg-brand">
+      <div class="tg-mark"><i></i><i></i><i></i><i></i></div>
+      <div>
+        <div class="tg-name">TileGenie</div>
+        <div class="tg-tag">Production intelligence for tile manufacturing, powered by Databricks Genie</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+with head_right:
+    if st.button("Reload", use_container_width=True, help="Re-run the executive questions and clear the chat"):
         st.session_state.dashboard_loaded = False
         st.session_state.dashboard_data = []
         st.session_state.conversation_id = None
         st.session_state.messages = []
         st.rerun()
-    
-    st.markdown("---")
-    st.caption("🧞‍♂️ Connected to Genie Space")
-    st.caption(f"`{GENIE_SPACE_ID[:16]}...`")
+st.markdown('<div class="tg-rule"></div>', unsafe_allow_html=True)
+
+# Auto-load dashboard on first load (PARALLEL EXECUTION)
+CEO_QUESTIONS = [
+    ("Yesterday's Production", "What was yesterday's total production in units?"),
+    ("Machines Down", "How many machines are currently down or in maintenance?"),
+    ("Total Inventory", "What is the current total inventory across all warehouses?"),
+]
+
+if not st.session_state.dashboard_loaded:
+    st.markdown('<div class="tg-sec">Executive Dashboard</div>', unsafe_allow_html=True)
+
+    w = get_workspace_client()
+    questions = [q for _, q in CEO_QUESTIONS]
+
+    progress = st.progress(0.0, text=f"Asking Genie {len(questions)} questions in parallel...")
+
+    start_time = time.time()
+    with ThreadPoolExecutor(max_workers=len(questions)) as executor:
+        futures = [executor.submit(ask_genie, w, GENIE_SPACE_ID, q, None) for q in questions]
+
+        results = []
+        for future in as_completed(futures):
+            result = future.result()
+            results.append(result)
+            progress.progress(
+                len(results) / len(questions),
+                text=f"Answered {len(results)} of {len(questions)}",
+            )
+            if result["success"] and st.session_state.conversation_id is None:
+                st.session_state.conversation_id = result["conversation_id"]
+
+    elapsed = time.time() - start_time
+    progress.empty()
+
+    st.session_state.dashboard_data = sorted(results, key=lambda x: questions.index(x["question"]))
+    st.session_state.dashboard_loaded = True
+    st.session_state.load_seconds = elapsed
+    st.rerun()
+
+# The dashboard and the chat each live in their own fragment. A widget inside a
+# fragment re-runs only that fragment, so clicking a suggested question or a SQL
+# icon no longer re-executes the whole script and repaints the entire page.
+@st.fragment
+def dashboard_panel():
+    meta = ""
+    if st.session_state.get("load_seconds"):
+        meta = f"<span>&nbsp;&nbsp;/&nbsp;&nbsp;{len(CEO_QUESTIONS)} parallel Genie queries in {st.session_state.load_seconds:.1f}s</span>"
+    st.markdown(f'<div class="tg-sec">Executive Dashboard{meta}</div>', unsafe_allow_html=True)
+
+    for col, (label, _), data in zip(st.columns(3, gap="medium"), CEO_QUESTIONS, st.session_state.dashboard_data):
+        with col, st.container(border=False):
+            st.markdown(
+                f'<span class="tg-card"></span><div class="tg-card-label">{label}</div>',
+                unsafe_allow_html=True,
+            )
+            if data["success"]:
+                st.markdown(data["content"])
+                if data.get("sql"):
+                    # icon-only, but :material/: renders an aria-label so it keeps an accessible name
+                    if st.button(":material/code:", key=f"sql_kpi_{label}", help="Show the SQL Genie generated"):
+                        show_sql(label, data["sql"])
+            else:
+                st.warning(data.get("error", "Unknown error"))
+
+    st.write("")
+
+
+QUICK_ACTIONS = [
+    ("Production Trends", "Show me production trends for the last 7 days"),
+    ("Low Stock", "Which products have the lowest stock levels?"),
+    ("Forecast", "What is the expected production for next quarter?"),
+    ("Machine Downtime", "Which machines had the most downtime this week?"),
+]
+
+
+@st.fragment
+def chat_panel():
+    st.markdown('<div class="tg-sec">Ask Genie<span>&nbsp;&nbsp;/&nbsp;&nbsp;suggested questions</span></div>', unsafe_allow_html=True)
+    for col, (label, question) in zip(st.columns(len(QUICK_ACTIONS), gap="small"), QUICK_ACTIONS):
+        if col.button(label, use_container_width=True):
+            # no st.rerun(): these buttons render before the pop below, so the
+            # question is picked up in this same pass.
+            st.session_state["pending_question"] = question
+
+    st.write("")
+
+    pending = st.session_state.pop("pending_question", None)
+
+    if not st.session_state.messages and not pending:
+        st.markdown(
+            '<div class="tg-empty">Pick a question above, or ask your own below.<br>'
+            'Genie writes the SQL and answers from your <b>16 gold tables</b>.</div>',
+            unsafe_allow_html=True,
+        )
+
+    for idx, msg in enumerate(st.session_state.messages):
+        with st.chat_message(msg["role"]):
+            if msg.get("error"):
+                st.error(msg["content"])
+            else:
+                st.markdown(msg["content"])
+
+            if msg["role"] == "assistant" and msg.get("sql"):
+                if st.button(":material/code:", key=f"sql_msg_{idx}", help="Show the SQL Genie generated"):
+                    show_sql(st.session_state.messages[idx - 1]["content"] if idx else "", msg["sql"])
+
+    if pending:
+        w = get_workspace_client()
+
+        st.session_state.messages.append({"role": "user", "content": pending})
+        with st.chat_message("user"):
+            st.markdown(pending)
+
+        with st.chat_message("assistant"), st.spinner("Genie is analyzing..."):
+            result = ask_genie(w, GENIE_SPACE_ID, pending, st.session_state.conversation_id)
+
+        if result["success"]:
+            if st.session_state.conversation_id is None:
+                st.session_state.conversation_id = result["conversation_id"]
+            answer = {"role": "assistant", "content": result["content"]}
+            if result.get("sql"):
+                answer["sql"] = result["sql"]
+        else:
+            answer = {"role": "assistant", "content": result.get("error", "Unknown error"), "error": True}
+
+        st.session_state.messages.append(answer)
+        # fragment scope: re-render just this panel so the answer goes through the
+        # history loop above (its SQL button would otherwise vanish on click).
+        st.rerun(scope="fragment")
+
+
+# Chat input stays at top level: inside a fragment Streamlit renders it inline
+# instead of pinning it to the bottom of the page.
+typed = st.chat_input("Ask Genie about your tile production...")
+if typed:
+    st.session_state["pending_question"] = typed
+
+if st.session_state.dashboard_loaded and st.session_state.dashboard_data:
+    dashboard_panel()
+
+chat_panel()

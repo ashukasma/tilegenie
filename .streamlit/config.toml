@@ -5,3 +5,13 @@ headless = true
 
 [browser]
 gatherUsageStats = false
+
+# Vastu-guided palette: ivory base (peace/purity), green primary (growth, N/E),
+# turmeric gold accent (prosperity, NE). Warm charcoal text, never pure black.
+[theme]
+base = "light"
+primaryColor = "#1B7A5A"
+backgroundColor = "#FCFAF5"
+secondaryBackgroundColor = "#F4EFE5"
+textColor = "#2E2B26"
+font = "sans serif"
