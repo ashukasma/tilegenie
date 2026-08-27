@@ -1,21 +1,30 @@
 """
-Minimal Test App - Just Hello World
+TileGenie - Minimal Test Version
 """
 
 import streamlit as st
+import os
 
-st.set_page_config(page_title="Test", page_icon="✅")
+st.set_page_config(
+    page_title="TileGenie",
+    page_icon="🟦",
+    layout="wide"
+)
 
-st.title("✅ TileGenie Test")
-st.write("If you can see this, the Databricks App is working!")
-st.write("The issue was with the Genie integration code.")
+st.title("🟦 TileGenie - Test Version")
+st.write("If you see this page, the app is working!")
 
+genie_space_id = os.getenv("GENIE_SPACE_ID", "Not configured")
+st.write(f"**Genie Space ID:** {genie_space_id}")
+
+st.success("✅ App infrastructure is healthy!")
 st.balloons()
 
 st.write("---")
-st.write("### App Info:")
-import os
-st.write(f"- Genie Space ID: {os.getenv('GENIE_SPACE_ID', 'Not set')}")
-st.write("- This test has NO Databricks SDK")
-st.write("- This test has NO Genie code")
-st.write("- Just pure Streamlit")
+st.write("### Status Check:")
+st.write("- ✅ Streamlit running")
+st.write("- ✅ Environment variables loaded")
+st.write("- ✅ No crashes!")
+
+if st.button("Click Me!"):
+    st.success("Button works!")

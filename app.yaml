@@ -1,25 +1,12 @@
 # TileGenie App Configuration
-# Databricks App specification for Genie-powered production intelligence
 
 command: ["streamlit", "run", "app.py", "--server.port=8501"]
 
-# REQUEST API PERMISSIONS - CRITICAL FOR GENIE ACCESS!
-user_api_scopes:
-  - all-apis  # Grants access to all Databricks APIs including Genie
-
 env:
   - name: GENIE_SPACE_ID
-    value: "genie://01f1a166e5891c2d89a0256412e7d452"
+    value: "01f1a166e5891c2d89a0256412e7d452"
 
 resources:
-  - name: tilegenie_agent
+  - name: tilegenie_genie
     genie_space:
       genie_space_id: "01f1a166e5891c2d89a0256412e7d452"
-
-app:
-  name: TileGenie
-  description: "Genie-powered production intelligence for tile manufacturing. Ask questions about production, inventory, machines, and sales in natural language."
-
-compute:
-  spec:
-    type: serverless
