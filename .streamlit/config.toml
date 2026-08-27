@@ -2,14 +2,15 @@
 port = 8501
 address = "0.0.0.0"
 headless = true
-enableCORS = false
-enableXsrfProtection = false
-baseUrlPath = ""
+enableCORS = true
+enableXsrfProtection = true
 
 [browser]
 gatherUsageStats = false
-serverAddress = "tile-genie-7474645664849173.aws.databricksapps.com"
-serverPort = 443
 
 [client]
 showErrorDetails = true
+toolbarMode = "minimal"
+
+[runner]
+fastReruns = true

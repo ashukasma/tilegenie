@@ -1,12 +1,10 @@
 """
-TileGenie - Simplified Genie-Powered Production Intelligence App
+TileGenie - Genie-Powered Production Intelligence App
 Databricks Community Contest: Genie-Powered App Challenge
 """
 
 import streamlit as st
 import os
-from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.genie import MessageStatus
 import time
 
 st.set_page_config(
@@ -27,11 +25,21 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-w = WorkspaceClient()
+# Initialize WorkspaceClient INSIDE a function, not at module level
+@st.cache_resource
+def get_workspace_client():
+    """Initialize WorkspaceClient with proper app authentication"""
+    from databricks.sdk import WorkspaceClient
+    try:
+        return WorkspaceClient()
+    except Exception as e:
+        st.error(f"Failed to initialize Databricks client: {e}")
+        return None
+
 GENIE_SPACE_ID = os.getenv("GENIE_SPACE_ID", "").replace("genie://", "")
 
 if not GENIE_SPACE_ID:
-    st.error("❌ GENIE_SPACE_ID not configured")
+    st.error("❌ GENIE_SPACE_ID not configured in app.yaml")
     st.stop()
 
 if "conversation_id" not in st.session_state:
@@ -51,6 +59,12 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 if user_input := st.chat_input("Ask about production, inventory, machines..."):
+    w = get_workspace_client()
+    
+    if not w:
+        st.error("❌ Could not initialize Databricks client")
+        st.stop()
+    
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -58,8 +72,13 @@ if user_input := st.chat_input("Ask about production, inventory, machines..."):
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
+                from databricks.sdk.service.genie import MessageStatus
+                
                 if not st.session_state.conversation_id:
-                    response = w.genie.start_conversation(space_id=GENIE_SPACE_ID, content=user_input)
+                    response = w.genie.start_conversation(
+                        space_id=GENIE_SPACE_ID,
+                        content=user_input
+                    )
                     st.session_state.conversation_id = response.conversation_id
                     message_id = response.message_id
                 else:
@@ -70,23 +89,42 @@ if user_input := st.chat_input("Ask about production, inventory, machines..."):
                     )
                     message_id = response.id
                 
-                for _ in range(60):
-                    message = w.genie.get_message(space_id=GENIE_SPACE_ID, conversation_id=st.session_state.conversation_id, message_id=message_id)
+                for attempt in range(60):
+                    message = w.genie.get_message(
+                        space_id=GENIE_SPACE_ID,
+                        conversation_id=st.session_state.conversation_id,
+                        message_id=message_id
+                    )
+                    
                     if message.status == MessageStatus.COMPLETED:
                         content = message.attachments[0].text.content if message.attachments else "No response"
                         st.markdown(content)
                         st.session_state.messages.append({"role": "assistant", "content": content})
                         break
                     elif message.status == MessageStatus.FAILED:
-                        st.error("Genie failed to process the message")
+                        error_msg = "Genie failed to process the message"
+                        st.error(error_msg)
+                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
                         break
+                    
                     time.sleep(2)
+                else:
+                    timeout_msg = "Response timed out after 2 minutes"
+                    st.error(timeout_msg)
+                    st.session_state.messages.append({"role": "assistant", "content": timeout_msg})
+                    
             except Exception as e:
-                st.error(f"Error: {str(e)}")
+                error_msg = f"Error: {str(e)}"
+                st.error(error_msg)
+                st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
 with st.sidebar:
     st.markdown("### 🏆 Contest Entry")
     st.write("Databricks Community Contest")
+    st.write("Genie-Powered App Challenge")
+    st.write("---")
+    st.write(f"**Genie Space:** {GENIE_SPACE_ID[:8]}...")
+    
     if st.button("Reset Conversation"):
         st.session_state.conversation_id = None
         st.session_state.messages = []
