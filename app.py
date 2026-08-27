@@ -383,9 +383,12 @@ def chat_panel():
             answer = {"role": "assistant", "content": result.get("error", "Unknown error"), "error": True}
 
         st.session_state.messages.append(answer)
-        # fragment scope: re-render just this panel so the answer goes through the
-        # history loop above (its SQL button would otherwise vanish on click).
-        st.rerun(scope="fragment")
+        # App scope, not scope="fragment", on purpose. A fragment-scoped rerun here
+        # re-runs only this panel, and any click that arrived on the *dashboard*
+        # fragment while Genie was working is consumed without that fragment ever
+        # running -- so its "View SQL" dialog silently never opened. Costs one full
+        # rerun per answer, hidden behind the query latency.
+        st.rerun()
 
 
 # Chat input stays at top level: inside a fragment Streamlit renders it inline
