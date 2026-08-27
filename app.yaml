@@ -3,30 +3,23 @@
 
 command: ["streamlit", "run", "app.py", "--server.port=8501"]
 
+# REQUEST API PERMISSIONS - CRITICAL FOR GENIE ACCESS!
+user_api_scopes:
+  - all-apis  # Grants access to all Databricks APIs including Genie
+
 env:
-  # Genie Space ID will be injected automatically when Genie Agent is added as a resource
   - name: GENIE_SPACE_ID
-    value: "genie://01f1a166e5891c2d89a0256412e7d452"  # Replace with actual Genie Space ID
+    value: "genie://01f1a166e5891c2d89a0256412e7d452"
 
 resources:
-  # Bind the Genie Agent as a resource
-  # The Genie Space ID will be automatically injected as GENIE_SPACE_ID env var
   - name: tilegenie_agent
     genie_space:
-      genie_space_id: "01f1a166e5891c2d89a0256412e7d452"  # Replace with actual Genie Space ID
-  
-  # Optional: SQL Warehouse binding if direct SQL queries are needed
-  # - name: sql_warehouse
-  #   sql_warehouse:
-  #     sql_warehouse_id: "<YOUR_WAREHOUSE_ID>"
+      genie_space_id: "01f1a166e5891c2d89a0256412e7d452"
 
-# App configuration
 app:
   name: TileGenie
   description: "Genie-powered production intelligence for tile manufacturing. Ask questions about production, inventory, machines, and sales in natural language."
-  
-# Compute configuration (serverless by default on Free Edition)
+
 compute:
   spec:
-    # Serverless compute is automatically used on Free Edition
     type: serverless

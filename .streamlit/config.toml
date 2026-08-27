@@ -4,8 +4,12 @@ address = "0.0.0.0"
 headless = true
 enableCORS = false
 enableXsrfProtection = false
+baseUrlPath = ""
 
 [browser]
 gatherUsageStats = false
-serverAddress = "0.0.0.0"
-serverPort = 8501
+serverAddress = "tilegenie-7474645664849173.aws.databricksapps.com"
+serverPort = 443
+
+[client]
+showErrorDetails = true
