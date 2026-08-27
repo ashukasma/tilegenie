@@ -8,7 +8,7 @@ baseUrlPath = ""
 
 [browser]
 gatherUsageStats = false
-serverAddress = "tilegenie-7474645664849173.aws.databricksapps.com"
+serverAddress = "tile-genie-7474645664849173.aws.databricksapps.com"
 serverPort = 443
 
 [client]
